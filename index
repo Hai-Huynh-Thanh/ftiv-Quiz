@@ -77,7 +77,7 @@
 <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 <script>
   // Thay URL Web App Apps Script của bạn vào đây
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyG447gVBArgX6iIb3tdkQ0vafODxPpAVYsGPUTBobPKc2Zxvghn0ofWuv2F4QI7mx2_A/exec";
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby2Vpv5ni1FZ_3rIBvf8Mq0xRDYH77oW6f2IlEcv4W1RVKGi2yaMJA7-jMuH0n_ksYuVA/exec";
 
   let questionsData = [];
   let employeesData = [];
