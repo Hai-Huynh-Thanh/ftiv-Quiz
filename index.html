@@ -6,21 +6,26 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { background:#f2f4f7; font-family:-apple-system,BlinkMacSystemFont,sans-serif; }
-    .app-box { max-width: 600px; margin:auto; background:#fff; min-height:100vh; padding:20px; box-shadow:0 0 10px rgba(0,0,0,0.05); }
+    .app-box { max-width: 650px; margin:auto; background:#fff; min-height:100vh; padding:20px; box-shadow:0 0 10px rgba(0,0,0,0.05); }
     .header { display:flex; align-items:center; gap:14px; padding-bottom:12px; border-bottom:2px solid #e0e0e0; }
     .main-title { font-size:20px; font-weight:700; color:#003366; }
     .sub-title { font-size:13px; color:#555; }
     .autocomplete-list li { cursor:pointer; font-size:15px; }
     .autocomplete-list li:hover { background:#f1f5ff; }
     .section-title { font-size:15px; font-weight:700; color:#003366; margin:22px 0 10px; padding-left:10px; border-left:4px solid #0d6efd; }
-    .question-item { border:1px solid #e5e5e5; border-radius:10px; padding:15px; margin-bottom:15px; transition: border-color .15s; background:#fafafa; }
+    .question-item { border:1px solid #e5e5e5; border-radius:10px; padding:15px; margin-bottom:15px; background:#fafafa; transition:0.2s; }
     .question-item.missing { border-color:#dc3545; background-color:#fff8f8; }
     .question-text { font-size:15px; font-weight:600; margin-bottom:12px; color:#212529; }
     .option-label { display:flex; align-items:center; padding:10px; border:1px solid #dee2e6; border-radius:8px; background:#fff; cursor:pointer; margin-bottom:8px; transition:0.2s; }
     .option-label:hover { background:#f8f9fa; }
     .option-label input[type="checkbox"] { width:18px; height:18px; margin-right:12px; }
-    .question-hint { font-style: italic; color: #0d6efd; font-size: 13px; margin-top: 8px; }
-    #quizWrap { display:none; }
+    
+    /* Trạng thái review sau khi nộp bài */
+    .option-label.correct-ans { background-color: #d1e7dd !important; border-color: #198754 !important; color: #0f5132; font-weight: 600; }
+    .option-label.wrong-ans { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #842029; text-decoration: line-through; }
+    .question-hint { font-style: italic; color: #084298; background-color: #cfe2ff; padding: 10px; border-radius: 6px; font-size: 13px; margin-top: 10px; display: none; }
+    
+    #quizWrap, #scoreBanner { display:none; }
   </style>
 </head>
 <body>
@@ -29,38 +34,46 @@
 
   <div class="header">
     <div class="title">
-      <div class="main-title">Ứng Dụng Thi Trắc Nghiệm</div>
-      <div class="sub-title">Chọn nhiều đáp án đúng cho mỗi câu hỏi</div>
+      <div class="main-title">Ứng Dụng Thi Trắc Nghiệm - Phòng Bulk</div>
+      <div class="sub-title">Có thể chọn nhiều đáp án đúng cho mỗi câu hỏi</div>
     </div>
   </div>
 
-  <div class="mt-3">
-    <label class="form-label fw-bold">Ngày làm bài</label>
-    <input type="date" class="form-control form-control-lg" id="evalDate">
+  <!-- Thông báo điểm số sau khi nộp -->
+  <div id="scoreBanner" class="alert text-center my-3 p-3 rounded-4 shadow-sm">
+    <h3 id="scoreTitle" class="fw-bold mb-1"></h3>
+    <p id="scoreDesc" class="mb-0 fs-5"></p>
   </div>
 
-  <div class="mt-3 position-relative">
-    <label class="form-label fw-bold">Tên thí sinh</label>
-    <input type="text" class="form-control form-control-lg" id="employee" placeholder="🔍 Gõ để tìm tên..." autocomplete="off">
-    <ul id="employeeList" class="list-group position-absolute w-100 d-none autocomplete-list" style="z-index:1000; max-height:200px; overflow-y:auto;"></ul>
-  </div>
+  <div id="setupForm">
+    <div class="mt-3">
+      <label class="form-label fw-bold">Ngày làm bài</label>
+      <input type="date" class="form-control form-control-lg" id="evalDate">
+    </div>
 
-  <div class="mt-3 position-relative">
-    <label class="form-label fw-bold">Chủ đề / Đề thi</label>
-    <input type="text" class="form-control form-control-lg" id="bulk" placeholder="🔍 Gõ để chọn chủ đề..." autocomplete="off">
-    <ul id="bulkList" class="list-group position-absolute w-100 d-none autocomplete-list" style="z-index:1000; max-height:200px; overflow-y:auto;"></ul>
-  </div>
+    <div class="mt-3 position-relative">
+      <label class="form-label fw-bold">Tên nhân viên</label>
+      <input type="text" class="form-control form-control-lg" id="employee" placeholder="🔍 Gõ để tìm tên..." autocomplete="off">
+      <ul id="employeeList" class="list-group position-absolute w-100 d-none autocomplete-list" style="z-index:1000; max-height:200px; overflow-y:auto;"></ul>
+    </div>
 
-  <div class="d-grid my-4">
-    <button class="btn btn-primary btn-lg shadow-sm" id="btnLoadCriteria" onclick="loadQuestionsSection()">
-      Bắt đầu làm bài
-    </button>
+    <div class="mt-3 position-relative">
+      <label class="form-label fw-bold">Chủ đề / Chọn loại Bulk</label>
+      <input type="text" class="form-control form-control-lg" id="bulk" placeholder="🔍 Gõ để chọn chủ đề..." autocomplete="off">
+      <ul id="bulkList" class="list-group position-absolute w-100 d-none autocomplete-list" style="z-index:1000; max-height:200px; overflow-y:auto;"></ul>
+    </div>
+
+    <div class="d-grid my-4">
+      <button class="btn btn-primary btn-lg shadow-sm" id="btnLoadCriteria" onclick="loadQuestionsSection()">
+        Bắt đầu làm bài
+      </button>
+    </div>
   </div>
 
   <div id="quizWrap">
     <hr>
     <div id="questionsList"></div>
-    <div class="d-grid my-3">
+    <div class="d-grid my-3" id="submitBtnWrap">
       <button class="btn btn-success btn-lg shadow-sm" id="btnSubmit" onclick="submitQuiz()">
         🚀 Nộp Bài Thi
       </button>
@@ -69,7 +82,7 @@
 
   <div id="loading" class="text-center my-3 d-none">
     <div class="spinner-border text-primary"></div>
-    <div class="mt-2 text-muted">Đang tải câu hỏi/xử lý bài thi...</div>
+    <div class="mt-2 text-muted">Đang xử lý dữ liệu...</div>
   </div>
 
 </div>
@@ -77,12 +90,14 @@
 <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 <script>
   // Thay URL Web App Apps Script của bạn vào đây
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby2Vpv5ni1FZ_3rIBvf8Mq0xRDYH77oW6f2IlEcv4W1RVKGi2yaMJA7-jMuH0n_ksYuVA/exec";
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbySzZF47l9OnS4uyHabvNQeVQVxFY_c_0Gij_nDJpCKK-cIanOm-I7AJ_OC5js6Mwlm7w/exec";
+  const PASSING_SCORE = 80; // Ngưỡng đạt điểm từ 80% trở lên (Có thể điều chỉnh)
 
   let questionsData = [];
   let employeesData = [];
   let bulksData = [];
-  let userAnswers = {}; // Dạng: { 1: ['A', 'C'], 2: ['B'] }
+  let userAnswers = {}; 
+  let isSubmitted = false;
 
   document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("evalDate").value = new Date().toISOString().slice(0, 10);
@@ -188,12 +203,12 @@
         text.textContent = `Câu ${q.stt}: ${q.text}`;
         div.appendChild(text);
 
-        // Render 4 đáp án dạng Checkbox
         q.options.forEach(opt => {
-          if (!opt.text) return; // Bỏ qua nếu lựa chọn rỗng
+          if (!opt.text) return;
 
           const label = document.createElement("label");
           label.className = "option-label";
+          label.id = `label-${q.stt}-${opt.key}`;
 
           const checkbox = document.createElement("input");
           checkbox.type = "checkbox";
@@ -206,10 +221,12 @@
           div.appendChild(label);
         });
 
+        // Gợi ý ẩn đi trước khi nộp bài
+        const hintDiv = document.createElement("div");
+        hintDiv.className = "question-hint";
+        hintDiv.id = `hint-${q.stt}`;
         if (q.hint) {
-          const hintDiv = document.createElement("div");
-          hintDiv.className = "question-hint";
-          hintDiv.textContent = "💡 Gợi ý: " + q.hint;
+          hintDiv.innerHTML = `<strong>💡 Giải thích / Gợi ý:</strong> ${q.hint}`;
           div.appendChild(hintDiv);
         }
 
@@ -217,7 +234,7 @@
       });
 
       document.getElementById("quizWrap").style.display = "block";
-      document.getElementById("btnLoadCriteria").classList.add("d-none");
+      document.getElementById("setupForm").style.display = "none";
       document.getElementById("quizWrap").scrollIntoView({ behavior: "smooth" });
 
     } else {
@@ -226,13 +243,13 @@
   }
 
   function onOptionChange(stt, qDiv) {
+    if (isSubmitted) return;
     qDiv.classList.remove("missing");
     const checkedBoxes = document.querySelectorAll(`input[name="q_${stt}"]:checked`);
     userAnswers[stt] = Array.from(checkedBoxes).map(cb => cb.value);
   }
 
   function submitQuiz() {
-    // Kiểm tra câu hỏi chưa làm (không chọn đáp án nào)
     const missing = questionsData.filter(q => !userAnswers[q.stt] || userAnswers[q.stt].length === 0);
 
     if (missing.length > 0) {
@@ -245,6 +262,20 @@
       return;
     }
 
+    swal({
+      title: "Xác nhận nộp bài?",
+      text: "Bạn có chắc chắn muốn nộp bài thi này không?",
+      icon: "warning",
+      buttons: ["Kiểm tra lại", "Nộp bài"],
+      dangerMode: false,
+    }).then((willSubmit) => {
+      if (willSubmit) {
+        processSubmission();
+      }
+    });
+  }
+
+  function processSubmission() {
     const payload = {
       action: "submitQuiz",
       evalDate: document.getElementById("evalDate").value,
@@ -263,7 +294,8 @@
         hideLoading();
         const res = JSON.parse(text);
         if (res.status === "SUCCESS") {
-          swal("Kết quả làm bài 🏆", res.message, "success").then(() => location.reload());
+          isSubmitted = true;
+          renderReviewMode(res.scorePercent, res.correctCount, res.totalQuestions, res.evaluatedQuestions);
         } else {
           swal("Lỗi", res.message, "error");
         }
@@ -272,6 +304,54 @@
         hideLoading();
         swal("Lỗi mạng", "Mất liên lạc với máy chủ Google Sheets", "error");
       });
+  }
+
+  function renderReviewMode(scorePercent, correctCount, totalQuestions, evaluatedQuestions) {
+    // Ẩn nút nộp bài, vô hiệu hóa các checkbox
+    document.getElementById("submitBtnWrap").style.display = "none";
+    document.querySelectorAll("input[type='checkbox']").forEach(cb => cb.disabled = true);
+
+    // Hiển thị banner kết quả với màu sắc và icon phù hợp theo thang điểm
+    const banner = document.getElementById("scoreBanner");
+    const title = document.getElementById("scoreTitle");
+    const desc = document.getElementById("scoreDesc");
+    
+    banner.style.display = "block";
+
+    if (scorePercent >= PASSING_SCORE) {
+      banner.className = "alert alert-success text-center my-3 p-3 rounded-4 shadow-sm";
+      title.innerHTML = `🎉 CHÚC MỪNG! BẠN ĐÃ ĐẠT`;
+      desc.innerHTML = `Điểm số: <b>${scorePercent}%</b> (${correctCount}/${totalQuestions} câu đúng)`;
+    } else {
+      banner.className = "alert alert-danger text-center my-3 p-3 rounded-4 shadow-sm";
+      title.innerHTML = `⚠️ CHƯA ĐẠT YÊU CẦU`;
+      desc.innerHTML = `Điểm số: <b>${scorePercent}%</b> (${correctCount}/${totalQuestions} câu đúng). Cố gắng ôn tập thêm nhé!`;
+    }
+
+    // Đổi màu các đáp án đúng/sai và hiện gợi ý chi tiết cho từng câu
+    evaluatedQuestions.forEach(q => {
+      q.options.forEach(opt => {
+        const label = document.getElementById(`label-${q.stt}-${opt.key}`);
+        if (!label) return;
+
+        const isCorrectOption = q.correctAnswers.includes(opt.key);
+        const isUserSelected = q.userAnswers.includes(opt.key);
+
+        if (isCorrectOption) {
+          label.classList.add("correct-ans"); // Màu xanh lá cho đáp án đúng
+        } else if (isUserSelected && !isCorrectOption) {
+          label.classList.add("wrong-ans");   // Màu đỏ cho đáp án người dùng chọn sai
+        }
+      });
+
+      // Hiển thị khung gợi ý/giải thích sau khi nộp
+      if (q.hint) {
+        const hintEl = document.getElementById(`hint-${q.stt}`);
+        if (hintEl) hintEl.style.display = "block";
+      }
+    });
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function showLoading() { document.getElementById("loading").classList.remove("d-none"); }
